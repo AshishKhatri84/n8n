@@ -1,0 +1,530 @@
+{
+  "name": "Invitations",
+  "nodes": [
+    {
+      "parameters": {
+        "sendTo": "ashish2022@vitbhopal.ac.in",
+        "subject": "1 Guest Invited !!",
+        "message": "1 Batch 2020 invited",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        448,
+        -112
+      ],
+      "id": "cb93eb4d-df83-497e-a12a-60d71a0c3eec",
+      "name": "2020",
+      "webhookId": "b2a4c37e-f2fe-4453-bb03-e5ca3d6e1917",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZvgAW6APg8obFbVx",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "ashish2022@vitbhopal.ac.in",
+        "subject": "1 Guest Invited !!",
+        "message": "1 Batch 2021 invited",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        448,
+        16
+      ],
+      "id": "98ebbe50-f647-4edc-b1b8-837f0d4bc6ad",
+      "name": "2021",
+      "webhookId": "b2a4c37e-f2fe-4453-bb03-e5ca3d6e1917",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZvgAW6APg8obFbVx",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "ashish2022@vitbhopal.ac.in",
+        "subject": "1 Guest Invited !!",
+        "message": "1 Batch 2022 invited",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        448,
+        160
+      ],
+      "id": "7d804b93-6370-4d28-802e-01f12ec65987",
+      "name": "2022",
+      "webhookId": "b2a4c37e-f2fe-4453-bb03-e5ca3d6e1917",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZvgAW6APg8obFbVx",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "Get-To-Gather",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Full Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Batch",
+              "fieldType": "checkbox",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "2020"
+                  },
+                  {
+                    "option": "2021"
+                  },
+                  {
+                    "option": "2022"
+                  }
+                ]
+              },
+              "limitSelection": "exact",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Date of Event",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "8 Oct 25"
+                  },
+                  {
+                    "option": "9 Oct 25"
+                  },
+                  {
+                    "option": "10 Oct 25"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -448,
+        16
+      ],
+      "id": "dff572f4-1d20-447f-bc49-dd793ea80657",
+      "name": "On form submission",
+      "webhookId": "7ae4c96c-8992-4de2-86f5-06f3df09d401"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "04ebadf2-4447-4118-b9d1-e0f5c1cc18ea",
+                    "leftValue": "={{ $json.Batch }}",
+                    "rightValue": "2020",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "2020"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "989ff363-c8db-48df-916f-eb64af3e3510",
+                    "leftValue": "={{ $json.Batch }}",
+                    "rightValue": "2021",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "2021"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c69cdd4a-a5c1-4516-a7d4-dbeca48f697d",
+                    "leftValue": "={{ $json.Batch }}",
+                    "rightValue": "2022",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "2022"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "1c56a314-12fd-4f30-aa86-e6b0a99d2b55",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        720,
+        0
+      ],
+      "id": "2165c20f-f2dc-4c33-83dc-5107a1fa5a29",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "sendTo": "44234ashish@gmail.com",
+        "subject": "Invitation Successful !!",
+        "message": "All Invitation are sent successfully !!",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        912,
+        16
+      ],
+      "id": "3de6d053-531e-4857-b7d4-f584bc5efa34",
+      "name": "Send a message3",
+      "webhookId": "b2a4c37e-f2fe-4453-bb03-e5ca3d6e1917",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZvgAW6APg8obFbVx",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1o1GyBh5lJW4jbUdM1o64ds3UVAxPA_GxWFvZ9Fm0PKY",
+          "mode": "list",
+          "cachedResultName": "Test spreadsheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1o1GyBh5lJW4jbUdM1o64ds3UVAxPA_GxWFvZ9Fm0PKY/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1o1GyBh5lJW4jbUdM1o64ds3UVAxPA_GxWFvZ9Fm0PKY/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Full Name": "={{ $json['Full Name'] }}",
+            "Batch": "={{ $json.Batch[0] }}",
+            "Date of Event": "={{ $json['Date of Event'] }}",
+            "Submitted Date & Time": "={{ $json.submittedAt }}",
+            "Email": "={{ $json.Email }}"
+          },
+          "matchingColumns": [
+            "Email"
+          ],
+          "schema": [
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Batch",
+              "displayName": "Batch",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Date of Event",
+              "displayName": "Date of Event",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Submitted Date & Time",
+              "displayName": "Submitted Date & Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -208,
+        16
+      ],
+      "id": "89da8dff-dd85-410b-ad5d-552876f5184a",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "442OBMrOUbHdYQMp",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "690dfe74-a5bf-4358-8d98-8b009a24a29f",
+              "leftValue": "={{ $json['Submitted Date & Time'] }}",
+              "rightValue": "2025-10-01T00:00:00",
+              "operator": {
+                "type": "dateTime",
+                "operation": "before"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        16
+      ],
+      "id": "fbefefcc-ad14-41f5-863f-515748e41fab",
+      "name": "Filter"
+    }
+  ],
+  "connections": {
+    "2020": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2021": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "2022": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "2020",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "2021",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "2022",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Send a message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {
+    "On form submission": [
+      {
+        "json": {
+          "Full Name": "Jason Roy",
+          "Email": "jasonroy123@gmail.com",
+          "Batch": [
+            "2022"
+          ],
+          "Date of Event": "10 Oct 25",
+          "submittedAt": "2025-09-26T17:19:50.027+05:30",
+          "formMode": "test"
+        }
+      }
+    ]
+  },
+  "triggerCount": 1,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
