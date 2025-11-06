@@ -1,0 +1,633 @@
+{
+  "name": "LinkedIn Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "b2a0314d-edc1-4019-b34c-addb354d073a",
+      "name": "Run Every Monday 10 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2020,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://nubela.co/proxycurl/api/linkedin/profile/connections",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "linkedin_profile_url",
+              "value": "https://www.linkedin.com/in/ashish-khatri-7a64b8331"
+            },
+            {
+              "name": "page_size",
+              "value": "5"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_PROXYCURL_API_KEY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ccaa586e-df0d-4b10-a623-e309ee86b6ed",
+      "name": "Get My Connections (5 only)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1800,
+        660
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "y3oO0Aljc5ETEuaK",
+          "name": "Tavily Credential"
+        }
+      },
+      "notes": "Gets first 5 connections for testing"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract connections array from response\nconst response = $input.item.json;\nconst connections = response.connections || response.results || [];\n\n// Return each connection as separate item\nreturn connections.map(conn => ({\n  name: conn.name || conn.full_name || 'Unknown',\n  headline: conn.headline || '',\n  profile_url: conn.profile_url || conn.public_identifier || '',\n  location: conn.location || '',\n  company: conn.company || ''\n}));"
+      },
+      "id": "b9c0ed64-d6ff-41cc-9a65-b6e7cdc92f5b",
+      "name": "Parse Connections",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1580,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter for \"prompt engineer\" in headline (case insensitive)\nconst item = $input.item.json;\nconst headline = (item.headline || '').toLowerCase();\n\n// Check if headline contains \"prompt engineer\" or \"prompt engineering\"\nconst isPromptEngineer = headline.includes('prompt engineer') || \n                         headline.includes('prompt engineering') ||\n                         headline.includes('ai prompt');\n\nif (isPromptEngineer) {\n  return item;\n} else {\n  return null; // Filter out this item\n}"
+      },
+      "id": "794441c9-dc68-4690-9e9a-4218ae26da45",
+      "name": "Filter: Prompt Engineers Only",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1360,
+        660
+      ],
+      "notes": "Keeps only connections with 'prompt engineer' in headline"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1abc123xyz",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [],
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "e5ddf234-1643-41d6-aeb1-18505d6ec131",
+      "name": "Check If Already Messaged",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        -1140,
+        660
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "jZnh1sek0aDJgXgc",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Reads existing messages to avoid duplicates"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if this person was already messaged\nconst currentPerson = $input.first().json;\nconst allLogs = $('Check If Already Messaged').all();\n\n// Check if profile_url exists in previous messages\nconst alreadyMessaged = allLogs.some(log => \n  log.json.profile_url === currentPerson.profile_url\n);\n\nif (alreadyMessaged) {\n  console.log(`Skipping ${currentPerson.name} - already messaged`);\n  return null; // Skip this person\n}\n\nreturn currentPerson;"
+      },
+      "id": "b2c0edcc-cc42-4a7e-9356-acb7e8d5985d",
+      "name": "Skip If Already Messaged",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -920,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "id": "4390ac15-faf1-4404-93a5-7939a3147909",
+      "name": "OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        -740,
+        860
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "yrtOFtHFWf6ExiOh",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write a short, compliant LinkedIn message for {{ $json.name }}.\n\nProfile: {{ $json.headline }}\nCompany: {{ $json.company }}\n\nRULES (ANTI-SPAM COMPLIANCE):\n1. Include clear unsubscribe option: \"Reply STOP to opt-out\"\n2. State who I am and why I'm reaching out\n3. Must be personal, not bulk/sales\n4. Maximum 250 characters\n5. Include legitimate business reason\n6. No misleading subject/content\n\nPurpose: Reconnect professionally, discuss prompt engineering trends, potential collaboration.\n\nWrite ONLY the message text. Be warm, professional, compliant."
+      },
+      "id": "dd80c056-3aa0-4daa-bde5-a1afa9164464",
+      "name": "Generate Compliant Message",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        -700,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "936ab49d-8992-4511-a7a7-14a2da325e40",
+      "name": "Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserItemList",
+      "typeVersion": 1,
+      "position": [
+        -620,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "msg",
+              "name": "message",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "recipient",
+              "name": "recipient_name",
+              "value": "={{ $('Skip If Already Messaged').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "url",
+              "name": "profile_url",
+              "value": "={{ $('Skip If Already Messaged').item.json.profile_url }}",
+              "type": "string"
+            },
+            {
+              "id": "headline",
+              "name": "headline",
+              "value": "={{ $('Skip If Already Messaged').item.json.headline }}",
+              "type": "string"
+            },
+            {
+              "id": "timestamp",
+              "name": "sent_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "name": "status",
+              "value": "ready_to_send",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ca7a2343-411a-49dc-be1f-c079a9341690",
+      "name": "Prepare Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        -400,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://nubela.co/proxycurl/api/linkedin/profile/messages/send",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_PROXYCURL_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"recipient_profile_url\": \"{{ $json.profile_url }}\",\n  \"message\": \"{{ $json.message }}\"\n}",
+        "options": {}
+      },
+      "id": "d1196c40-412c-4458-9b72-1397aed1199e",
+      "name": "Send LinkedIn Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -220,
+        660
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "y3oO0Aljc5ETEuaK",
+          "name": "Tavily Credential"
+        }
+      },
+      "notes": "Sends the message via Proxycurl API"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1abc123xyz",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": [],
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "d56dde4b-dd2d-42ca-971e-e4a10cb1c62d",
+      "name": "Log to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        -20,
+        660
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "jZnh1sek0aDJgXgc",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Auto-creates columns and logs message"
+    },
+    {
+      "parameters": {
+        "amount": 60
+      },
+      "id": "93baadfa-48af-41ad-ac6b-0923f75f3aac",
+      "name": "Wait 60 Seconds",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        180,
+        660
+      ],
+      "webhookId": "99d10576-c76d-45f2-bc9d-43bc35d1607a",
+      "notes": "Prevents rate limiting - LinkedIn allows ~20 msgs/hour"
+    },
+    {
+      "parameters": {
+        "url": "https://nubela.co/proxycurl/api/linkedin/profile/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "conversation_url",
+              "value": "={{ $json.profile_url }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_PROXYCURL_API_KEY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "52eb2f87-296c-437b-9863-bc54bdd38d75",
+      "name": "Check for Replies",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        660
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "y3oO0Aljc5ETEuaK",
+          "name": "Tavily Credential"
+        }
+      },
+      "notes": "Checks if person replied"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if there's a new reply\nconst messages = $input.item.json.messages || [];\nconst lastMessage = messages[messages.length - 1];\n\n// Check if last message is from them (not from us)\nif (lastMessage && lastMessage.from !== 'me') {\n  return {\n    profile_url: $('Prepare Data').item.json.profile_url,\n    recipient_name: $('Prepare Data').item.json.recipient_name,\n    reply: lastMessage.text,\n    replied_at: lastMessage.timestamp,\n    has_reply: true\n  };\n}\n\nreturn {\n  profile_url: $('Prepare Data').item.json.profile_url,\n  recipient_name: $('Prepare Data').item.json.recipient_name,\n  has_reply: false\n};"
+      },
+      "id": "c741beac-1cf1-4320-a733-df61444287b7",
+      "name": "Parse Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        620,
+        660
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1abc123xyz",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {}
+      },
+      "id": "a3119e1c-693a-4b32-9800-7c5dbfce09d4",
+      "name": "Update Reply Status in Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        840,
+        660
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "jZnh1sek0aDJgXgc",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "44234ashish@gmail.com",
+        "subject": "LinkedIn AI Agent - Summary",
+        "message": "=<h2>LinkedIn Messaging Summary</h2>\n\n<p><strong>Total Connections Checked:</strong> {{ $('Get My Connections (5 only)').all().length }}</p>\n<p><strong>Prompt Engineers Found:</strong> {{ $('Filter: Prompt Engineers Only').all().length }}</p>\n<p><strong>New Messages Sent:</strong> {{ $('Send LinkedIn Message').all().length }}</p>\n<p><strong>Replies Received:</strong> {{ $('Parse Reply').all().filter(item => item.json.has_reply).length }}</p>\n\n<h3>Messages Sent:</h3>\n<ul>\n{{ $('Send LinkedIn Message').all().map(item => `<li>${item.json.recipient_name} - ${item.json.profile_url}</li>`).join('') }}\n</ul>\n\n<h3>Replies:</h3>\n<ul>\n{{ $('Parse Reply').all().filter(item => item.json.has_reply).map(item => `<li><strong>${item.json.recipient_name}:</strong> ${item.json.reply}</li>`).join('') }}\n</ul>\n\n<p><em>Check Google Sheets for full details.</em></p>",
+        "options": {}
+      },
+      "id": "6d6b7178-7cf3-40d8-a71b-cf2a102f4637",
+      "name": "Send Gmail Summary",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1060,
+        660
+      ],
+      "webhookId": "bfe0069c-3556-4dbb-9a71-5dbe0ad61a9a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ULiAhVIv5rMVQMEL",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Run Every Monday 10 AM": {
+      "main": [
+        [
+          {
+            "node": "Get My Connections (5 only)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get My Connections (5 only)": {
+      "main": [
+        [
+          {
+            "node": "Parse Connections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Connections": {
+      "main": [
+        [
+          {
+            "node": "Filter: Prompt Engineers Only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter: Prompt Engineers Only": {
+      "main": [
+        [
+          {
+            "node": "Check If Already Messaged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Already Messaged": {
+      "main": [
+        [
+          {
+            "node": "Skip If Already Messaged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip If Already Messaged": {
+      "main": [
+        [
+          {
+            "node": "Generate Compliant Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Compliant Message": {
+      "main": [
+        [
+          {
+            "node": "Prepare Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Compliant Message",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data": {
+      "main": [
+        [
+          {
+            "node": "Send LinkedIn Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send LinkedIn Message": {
+      "main": [
+        [
+          {
+            "node": "Log to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Wait 60 Seconds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 60 Seconds": {
+      "main": [
+        [
+          {
+            "node": "Check for Replies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for Replies": {
+      "main": [
+        [
+          {
+            "node": "Parse Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Reply": {
+      "main": [
+        [
+          {
+            "node": "Update Reply Status in Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Reply Status in Sheet": {
+      "main": [
+        [
+          {
+            "node": "Send Gmail Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Output Parser": {
+      "ai_outputParser": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0e9976db-d133-4300-b3c6-1c7c50c8c978",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3f21aaf8491157c44331f10f943768229b6695aa90fd86fc40ddb60f0a283c31"
+  },
+  "id": "UtvLsjaYHlLzzmRe",
+  "tags": []
+}

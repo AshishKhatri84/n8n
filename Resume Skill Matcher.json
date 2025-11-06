@@ -1,0 +1,549 @@
+{
+  "name": "Resume Matcher - Web Upload System",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resume-upload",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 400],
+      "id": "webhook-upload",
+      "name": "Resume Upload Webhook",
+      "webhookId": "resume-upload-endpoint"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract file from multipart form data\nconst items = $input.all();\nconst bodyData = items[0].binary;\n\n// Get the uploaded file\nlet fileData = null;\nlet fileName = 'resume';\n\nif (bodyData && bodyData.data) {\n  fileData = bodyData.data;\n  \n  // Try to extract filename from headers\n  const headers = items[0].json.headers || {};\n  const contentDisposition = headers['content-disposition'] || '';\n  const fileNameMatch = contentDisposition.match(/filename=\"?([^\"]+)\"?/);\n  \n  if (fileNameMatch) {\n    fileName = fileNameMatch[1];\n  }\n}\n\nreturn {\n  json: {\n    fileName: fileName,\n    uploadTime: new Date().toISOString(),\n    fileSize: fileData ? fileData.length : 0\n  },\n  binary: {\n    data: fileData\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 400],
+      "id": "parse-upload",
+      "name": "Parse File Upload"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.fileName }}",
+              "operation": "contains",
+              "value2": ".pdf"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [680, 300],
+      "id": "check-pdf",
+      "name": "Is PDF?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.fileName }}",
+              "operation": "contains",
+              "value2": ".docx"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [680, 500],
+      "id": "check-docx",
+      "name": "Is DOCX?"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "id": "extract-pdf",
+      "name": "Extract PDF Text"
+    },
+    {
+      "parameters": {
+        "operation": "docx",
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [900, 500],
+      "id": "extract-docx",
+      "name": "Extract DOCX Text"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [900, 700],
+      "id": "extract-txt",
+      "name": "Extract TXT Text"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [1120, 400],
+      "id": "merge-text",
+      "name": "Merge Extracted Text"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "resume-text-field",
+              "name": "resumeText",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "original-filename",
+              "name": "originalFileName",
+              "value": "={{ $('Parse File Upload').item.json.fileName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1340, 400],
+      "id": "set-resume-text",
+      "name": "Set Resume Text"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list"
+        },
+        "options": {
+          "rangeDefinition": "specifyRangeProperties",
+          "range": "A2:D100"
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1560, 400],
+      "id": "get-jobs",
+      "name": "Get Job Descriptions",
+      "notes": "UPDATE: Add your Google Sheets document ID here",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1780, 400],
+      "id": "split-batches-start",
+      "name": "Loop Jobs Start"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "current-job-title",
+              "name": "currentJobTitle",
+              "value": "={{ $json['Job Title'] }}",
+              "type": "string"
+            },
+            {
+              "id": "current-job-dept",
+              "name": "currentJobDepartment",
+              "value": "={{ $json['Department'] }}",
+              "type": "string"
+            },
+            {
+              "id": "current-job-desc",
+              "name": "currentJobDescription",
+              "value": "={{ $json['Job Description'] }}",
+              "type": "string"
+            },
+            {
+              "id": "current-job-skills",
+              "name": "currentJobSkills",
+              "value": "={{ $json['Required Skills'] }}",
+              "type": "string"
+            },
+            {
+              "id": "resume-text-pass",
+              "name": "resumeText",
+              "value": "={{ $('Set Resume Text').item.json.resumeText }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2000, 400],
+      "id": "prepare-analysis",
+      "name": "Prepare Analysis Data"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=RESUME:\n{{ $json.resumeText }}\n\n---\n\nJOB DESCRIPTION:\nTitle: {{ $json.currentJobTitle }}\nDepartment: {{ $json.currentJobDepartment }}\n\n{{ $json.currentJobDescription }}\n\nRequired Skills: {{ $json.currentJobSkills }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an expert ATS (Applicant Tracking System) and technical recruiter with 15+ years of experience. Your task is to analyze a candidate's resume against a specific job description and provide a comprehensive, data-driven assessment.\n\n## Analysis Framework\n\n### 1. Match Percentage Calculation (0-100%)\nCalculate an objective match score based on:\n- **Required Skills Match (40%)**: Count how many required skills appear in the resume\n- **Experience Relevance (25%)**: Years of experience and role relevance\n- **Education & Certifications (15%)**: Degree level and relevant certifications\n- **Soft Skills & Cultural Fit (10%)**: Leadership, communication, teamwork indicators\n- **Industry/Domain Knowledge (10%)**: Relevant industry experience\n\n### 2. Skill Analysis\n- **Required Skills Present**: List ONLY skills from the job requirements that appear in the resume\n- **Skill Gaps**: List ONLY required skills that are missing from the resume\n- Be precise - don't assume skills that aren't explicitly mentioned\n\n### 3. Experience Alignment\nRate as Excellent/Good/Fair/Poor based on:\n- Years of experience vs job requirements\n- Relevance of past roles to this position\n- Career progression and growth trajectory\n\n### 4. Key Strengths\nIdentify the top 3-5 qualifications that make this candidate stand out FOR THIS SPECIFIC ROLE.\n\n### 5. Actionable Recommendations\nProvide 2-4 specific, actionable recommendations for either:\n- What the candidate should emphasize in interviews\n- Skills they should develop to be more competitive\n- How to position their experience for this role\n\n### 6. Overall Assessment\nProvide a clear recommendation:\n- \"Strong candidate - recommend interview\"\n- \"Potential fit - recommend phone screen\"\n- \"Marginal fit - proceed only if candidate pool is limited\"\n- \"Not a good fit - do not proceed\"\n\n## Important Guidelines\n- Base your analysis ONLY on what's in the resume - don't make assumptions\n- Be honest and objective - over-rating helps no one\n- Use specific examples from the resume when possible\n- Consider both technical AND cultural fit indicators"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [2220, 400],
+      "id": "analyzer-agent",
+      "name": "AI Resume Analyzer"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [2220, 620],
+      "id": "openai-model",
+      "name": "OpenAI GPT-4o-mini",
+      "notes": "UPDATE: Connect your OpenAI credentials",
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"match_percentage\": {\n      \"type\": \"integer\",\n      \"description\": \"Overall match percentage (0-100)\",\n      \"minimum\": 0,\n      \"maximum\": 100\n    },\n    \"skill_gaps\": {\n      \"type\": \"array\",\n      \"description\": \"Required skills missing from resume\",\n      \"items\": {\"type\": \"string\"}\n    },\n    \"required_skills_present\": {\n      \"type\": \"array\",\n      \"description\": \"Required skills found in resume\",\n      \"items\": {\"type\": \"string\"}\n    },\n    \"experience_alignment\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"score\": {\n          \"type\": \"string\",\n          \"enum\": [\"Excellent\", \"Good\", \"Fair\", \"Poor\"]\n        },\n        \"explanation\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\"score\", \"explanation\"]\n    },\n    \"key_strengths\": {\n      \"type\": \"array\",\n      \"description\": \"Top 3-5 strengths for this role\",\n      \"items\": {\"type\": \"string\"}\n    },\n    \"recommendations\": {\n      \"type\": \"array\",\n      \"description\": \"2-4 actionable recommendations\",\n      \"items\": {\"type\": \"string\"}\n    },\n    \"overall_assessment\": {\n      \"type\": \"string\",\n      \"description\": \"Final recommendation with reasoning\"\n    }\n  },\n  \"required\": [\n    \"match_percentage\",\n    \"skill_gaps\",\n    \"required_skills_present\",\n    \"experience_alignment\",\n    \"key_strengths\",\n    \"recommendations\",\n    \"overall_assessment\"\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [2020, 620],
+      "id": "output-parser",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "result-job-title",
+              "name": "job_title",
+              "value": "={{ $('Prepare Analysis Data').item.json.currentJobTitle }}",
+              "type": "string"
+            },
+            {
+              "id": "result-department",
+              "name": "department",
+              "value": "={{ $('Prepare Analysis Data').item.json.currentJobDepartment }}",
+              "type": "string"
+            },
+            {
+              "id": "result-match-pct",
+              "name": "match_percentage",
+              "value": "={{ $json.output.match_percentage }}",
+              "type": "number"
+            },
+            {
+              "id": "result-skill-gaps",
+              "name": "skill_gaps",
+              "value": "={{ $json.output.skill_gaps.join(', ') }}",
+              "type": "string"
+            },
+            {
+              "id": "result-skills-present",
+              "name": "required_skills_present",
+              "value": "={{ $json.output.required_skills_present.join(', ') }}",
+              "type": "string"
+            },
+            {
+              "id": "result-exp-score",
+              "name": "experience_score",
+              "value": "={{ $json.output.experience_alignment.score }}",
+              "type": "string"
+            },
+            {
+              "id": "result-exp-explanation",
+              "name": "experience_explanation",
+              "value": "={{ $json.output.experience_alignment.explanation }}",
+              "type": "string"
+            },
+            {
+              "id": "result-strengths",
+              "name": "key_strengths",
+              "value": "={{ $json.output.key_strengths.join(', ') }}",
+              "type": "string"
+            },
+            {
+              "id": "result-recommendations",
+              "name": "recommendations",
+              "value": "={{ $json.output.recommendations.join(', ') }}",
+              "type": "string"
+            },
+            {
+              "id": "result-assessment",
+              "name": "overall_assessment",
+              "value": "={{ $json.output.overall_assessment }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2440, 400],
+      "id": "format-result",
+      "name": "Format Result"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [2660, 400],
+      "id": "split-batches-end",
+      "name": "Loop Jobs End"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate all job analysis results\nconst allResults = [];\nconst items = $input.all();\n\nfor (const item of items) {\n  allResults.push({\n    job_title: item.json.job_title,\n    department: item.json.department,\n    match_percentage: item.json.match_percentage,\n    skill_gaps: item.json.skill_gaps,\n    required_skills_present: item.json.required_skills_present,\n    experience_score: item.json.experience_score,\n    experience_explanation: item.json.experience_explanation,\n    key_strengths: item.json.key_strengths,\n    recommendations: item.json.recommendations,\n    overall_assessment: item.json.overall_assessment\n  });\n}\n\n// Sort by match percentage (highest first)\nallResults.sort((a, b) => b.match_percentage - a.match_percentage);\n\n// Calculate statistics\nconst totalJobs = allResults.length;\nconst sumMatch = allResults.reduce((sum, r) => sum + r.match_percentage, 0);\nconst avgMatch = totalJobs > 0 ? Math.round(sumMatch / totalJobs) : 0;\nconst bestMatch = allResults.length > 0 ? allResults[0] : null;\n\nreturn {\n  json: {\n    total_jobs_analyzed: totalJobs,\n    average_match: avgMatch,\n    best_match: bestMatch,\n    analysis_timestamp: new Date().toISOString(),\n    results: allResults\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2880, 400],
+      "id": "aggregate-results",
+      "name": "Aggregate Results"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [3100, 400],
+      "id": "respond-webhook",
+      "name": "Return Results to Client"
+    },
+    {
+      "parameters": {
+        "content": "## 📤 UPLOAD ENDPOINT\nReceives resume files via HTTP POST\n\nCORS enabled for web access",
+        "height": 240,
+        "width": 280,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, 280],
+      "id": "note-upload",
+      "name": "Note - Upload"
+    },
+    {
+      "parameters": {
+        "content": "## 🔍 FILE EXTRACTION\nSupports PDF, DOCX, and TXT formats\n\nExtracts text content from binary data",
+        "height": 540,
+        "width": 500,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [620, 240],
+      "id": "note-extraction",
+      "name": "Note - Extraction"
+    },
+    {
+      "parameters": {
+        "content": "## 📊 DATABASE FETCH\n\n⚠️ UPDATE THIS NODE:\n1. Connect Google Sheets credential\n2. Add your spreadsheet ID\n3. Select your sheet name\n\nReads all job descriptions from sheet",
+        "height": 240,
+        "width": 320,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1480, 280],
+      "id": "note-database",
+      "name": "Note - Database"
+    },
+    {
+      "parameters": {
+        "content": "## 🤖 AI ANALYSIS ENGINE\n\nCompares resume vs each job using:\n- GPT-4o-mini model\n- Structured output parsing\n- Comprehensive scoring\n\n⚠️ UPDATE: Connect OpenAI credential",
+        "height": 480,
+        "width": 700,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1920, 280],
+      "id": "note-ai",
+      "name": "Note - AI"
+    },
+    {
+      "parameters": {
+        "content": "## 📈 RESULTS AGGREGATION\n\nCompiles all matches:\n- Sorts by percentage\n- Calculates statistics\n- Returns formatted JSON",
+        "height": 240,
+        "width": 500,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2800, 280],
+      "id": "note-results",
+      "name": "Note - Results"
+    },
+    {
+      "parameters": {
+        "content": "## 🚀 QUICK START CHECKLIST\n\n### Required Setup:\n\n✅ **1. Import this workflow into n8n**\n\n✅ **2. Configure Credentials:**\n   - Google Sheets OAuth2\n   - OpenAI API\n\n✅ **3. Update \"Get Job Descriptions\" node:**\n   - Click the node\n   - Add your Google Sheets ID\n   - Select sheet name\n\n✅ **4. Activate the workflow**\n   - Toggle \"Active\" in top right\n\n✅ **5. Copy webhook URL**\n   - From \"Resume Upload Webhook\" node\n   - Update HTML form with this URL\n\n✅ **6. Test with a resume**\n\n---\n\n### Webhook URL Format:\nhttps://your-n8n.com/webhook/resume-upload\n\n### Expected Response:\n```json\n{\n  \"total_jobs_analyzed\": 20,\n  \"average_match\": 67,\n  \"best_match\": {...},\n  \"results\": [...]\n}\n```",
+        "height": 700,
+        "width": 440
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-160, 240],
+      "id": "note-setup",
+      "name": "Setup Instructions"
+    }
+  ],
+  "connections": {
+    "Resume Upload Webhook": {
+      "main": [[{"node": "Parse File Upload", "type": "main", "index": 0}]]
+    },
+    "Parse File Upload": {
+      "main": [[
+        {"node": "Is PDF?", "type": "main", "index": 0},
+        {"node": "Is DOCX?", "type": "main", "index": 0},
+        {"node": "Extract TXT Text", "type": "main", "index": 0}
+      ]]
+    },
+    "Is PDF?": {
+      "main": [[{"node": "Extract PDF Text", "type": "main", "index": 0}]]
+    },
+    "Is DOCX?": {
+      "main": [[{"node": "Extract DOCX Text", "type": "main", "index": 0}]]
+    },
+    "Extract PDF Text": {
+      "main": [[{"node": "Merge Extracted Text", "type": "main", "index": 0}]]
+    },
+    "Extract DOCX Text": {
+      "main": [[{"node": "Merge Extracted Text", "type": "main", "index": 0}]]
+    },
+    "Extract TXT Text": {
+      "main": [[{"node": "Merge Extracted Text", "type": "main", "index": 0}]]
+    },
+    "Merge Extracted Text": {
+      "main": [[{"node": "Set Resume Text", "type": "main", "index": 0}]]
+    },
+    "Set Resume Text": {
+      "main": [[{"node": "Get Job Descriptions", "type": "main", "index": 0}]]
+    },
+    "Get Job Descriptions": {
+      "main": [[{"node": "Loop Jobs Start", "type": "main", "index": 0}]]
+    },
+    "Loop Jobs Start": {
+      "main": [
+        [{"node": "Prepare Analysis Data", "type": "main", "index": 0}],
+        [{"node": "Aggregate Results", "type": "main", "index": 0}]
+      ]
+    },
+    "Prepare Analysis Data": {
+      "main": [[{"node": "AI Resume Analyzer", "type": "main", "index": 0}]]
+    },
+    "AI Resume Analyzer": {
+      "main": [[{"node": "Format Result", "type": "main", "index": 0}]]
+    },
+    "OpenAI GPT-4o-mini": {
+      "ai_languageModel": [[{"node": "AI Resume Analyzer", "type": "ai_languageModel", "index": 0}]]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [[{"node": "AI Resume Analyzer", "type": "ai_outputParser", "index": 0}]]
+    },
+    "Format Result": {
+      "main": [[{"node": "Loop Jobs End", "type": "main", "index": 0}]]
+    },
+    "Loop Jobs End": {
+      "main": [[{"node": "Loop Jobs Start", "type": "main", "index": 0}]]
+    },
+    "Aggregate Results": {
+      "main": [[{"node": "Return Results to Client", "type": "main", "index": 0}]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-10-25T04:44:00.000Z",
+  "versionId": "1.0.0"
+}
