@@ -13,11 +13,7 @@ These workflows demonstrate:
 -   📊 Google Sheets integration
 -   🤖 OpenAI + AI Agent workflows
 
-------------------------------------------------------------------------
-
 # 📌 Workflows Included
-
-------------------------------------------------------------------------
 
 ## 🎟 1️⃣ Invitations Workflow
 
