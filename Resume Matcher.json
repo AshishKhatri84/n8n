@@ -1,0 +1,321 @@
+{
+  "name": "Resume Matcher - Capstone Demo (Stable)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resume-upload",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "49acc270-3ed9-4914-b98d-e72fe205f6b3",
+      "name": "Resume Upload Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        0
+      ],
+      "webhookId": "d93ef523-0a95-4e78-88f5-484198ae2143"
+    },
+    {
+      "parameters": {
+        "jsCode": "const base64 = $json.body.fileBase64;\nconst fileName = $json.body.fileName || \"resume.pdf\";\n\nif (!base64) {\n  throw new Error(\"fileBase64 is missing\");\n}\n\nconst buffer = Buffer.from(base64, \"base64\");\n\n// Detect file type\nlet mimeType = \"application/pdf\";\n\nif (fileName.toLowerCase().endsWith(\".txt\")) {\n  mimeType = \"text/plain\";\n}\n\nreturn [{\n  binary: {\n    data: {\n      data: buffer,\n      mimeType: mimeType,\n      fileName: fileName\n    }\n  }\n}];"
+      },
+      "id": "b3924bfd-20a8-4e5f-8e90-f98a020ef9c6",
+      "name": "Convert Base64 to Binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "f09beef1-16f2-4cc0-a704-53bbbd2ce3a5",
+      "name": "Extract PDF Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        32,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "resumeText",
+              "stringValue": "=={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d1fe7294-a320-488f-869e-a95e554351b4",
+      "name": "Set Resume Text",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        416,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const allResults = $input.all().map(item => item.json);\n\n// sort highest match first\nallResults.sort((a, b) => b.match_percentage - a.match_percentage);\n\n// take top 4\nconst top4 = allResults.slice(0, 4);\n\nreturn [{\n  json: {\n    total_jobs_analyzed: allResults.length,\n    top_matches: top4\n  }\n}];"
+      },
+      "id": "142a5c0f-c766-43a3-a6e1-bb5746e1acc9",
+      "name": "Collect Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "4fb520e0-04c8-45b7-8483-73e0a8fa5ce5",
+      "name": "Return Results",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1168,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const stopWords = [\"with\",\"and\",\"the\",\"for\",\"using\",\"looking\",\"experience\",\"knowledge\"];\n\nconst resume = $json.resumeText.toLowerCase();\nconst jobTitle = $json.title;\nconst jobDescription = $json.description.toLowerCase();\n\nconst keywords = jobDescription\n  .replace(/[^a-zA-Z0-9 ]/g, \"\")\n  .split(\" \")\n  .filter(word => word.length > 3 && !stopWords.includes(word));\n\nconst uniqueKeywords = [...new Set(keywords)];\n\nlet matched = [];\nlet missing = [];\n\nuniqueKeywords.forEach(keyword => {\n  if (resume.includes(keyword)) {\n    matched.push(keyword);\n  } else {\n    missing.push(keyword);\n  }\n});\n\nlet percentage = Math.round((matched.length / uniqueKeywords.length) * 100);\n\nif (percentage > 95) percentage = 95;\nif (percentage < 10) percentage = 10;\n\nlet assessment = \"Moderate fit\";\n\nif (percentage >= 75) {\n  assessment = \"Strong candidate - recommend interview\";\n} else if (percentage >= 50) {\n  assessment = \"Potential fit - recommend phone screen\";\n} else {\n  assessment = \"Limited match - consider skill improvement\";\n}\n\nreturn {\n    job_title: jobTitle,\n    match_percentage: percentage,\n    required_skills_present: matched.slice(0, 6),\n    skill_gaps: missing.slice(0, 6),\n    overall_assessment: assessment\n  };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        0
+      ],
+      "id": "d4d7cf0b-134a-41ce-a066-21ed93b06749",
+      "name": "Simulated AI Match"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2b07ad6d-2867-45e0-96fe-f71d98b2635c",
+              "leftValue": "={{$binary.data.mimeType}}",
+              "rightValue": "=application/pdf",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -192,
+        0
+      ],
+      "id": "c833f4ae-cbad-4db7-8a5f-712757d330f4",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        32,
+        96
+      ],
+      "id": "c732e57d-3ed3-45af-bf00-e446f47b8768",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        240,
+        0
+      ],
+      "id": "82cc58cd-fa06-4a5c-a5be-4393189ac441",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resumeText = $json.resumeText;\n\nconst jobs = [\n  {\"title\":\"Machine Learning Engineer\",\"description\":\"Python machine learning TensorFlow PyTorch pandas numpy modeling\"},\n  {\"title\":\"Software Engineer\",\"description\":\"JavaScript Python REST APIs microservices cloud Git testing\"},\n  {\"title\":\"Frontend Developer\",\"description\":\"HTML CSS JavaScript React Vue UI UX responsive design\"},\n  {\"title\":\"Backend Developer\",\"description\":\"Node.js Express REST APIs authentication MongoDB SQL caching\"},\n  {\"title\":\"Data Analyst\",\"description\":\"SQL Excel PowerBI Tableau statistics reporting visualization\"},\n  {\"title\":\"DevOps Engineer\",\"description\":\"Docker Kubernetes CI CD Jenkins AWS Linux scripting\"},\n  {\"title\":\"Cybersecurity Analyst\",\"description\":\"network security firewalls encryption penetration testing SIEM\"},\n  {\"title\":\"Cloud Engineer\",\"description\":\"AWS Azure GCP cloud infrastructure Terraform deployment\"},\n  {\"title\":\"Full Stack Developer\",\"description\":\"React Node MongoDB APIs frontend backend integration\"},\n  {\"title\":\"AI Engineer\",\"description\":\"NLP transformers deep learning LLM training experimentation\"},\n  {\"title\":\"Mobile Developer\",\"description\":\"Flutter React Native Android iOS mobile UI development\"},\n  {\"title\":\"QA Engineer\",\"description\":\"manual testing automation Selenium Cypress debugging\"},\n  {\"title\":\"Database Administrator\",\"description\":\"SQL indexing performance tuning backup recovery\"},\n  {\"title\":\"System Engineer\",\"description\":\"Linux networking troubleshooting monitoring configuration\"},\n  {\"title\":\"UI Designer\",\"description\":\"Figma Adobe XD wireframes prototyping design systems\"},\n  {\"title\":\"Product Manager\",\"description\":\"Agile Scrum roadmap planning stakeholder communication\"},\n  {\"title\":\"Business Analyst\",\"description\":\"requirements documentation process analysis UML stakeholder\"},\n  {\"title\":\"Blockchain Developer\",\"description\":\"Solidity Ethereum smart contracts web3 decentralized cryptography\"},\n  {\"title\":\"Game Developer\",\"description\":\"Unity Unreal C# game physics rendering optimization\"},\n  {\"title\":\"Research Engineer\",\"description\":\"algorithms research experimentation optimization simulation\"}\n];\n\nreturn jobs.map(job => ({\n  json: {\n    title: job.title,\n    description: job.description,\n    resumeText: resumeText\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        0
+      ],
+      "id": "b5f4f995-4e3c-4007-8a52-5f425bbdea88",
+      "name": "Generate Jobs"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Resume Upload Webhook": {
+      "main": [
+        [
+          {
+            "node": "Convert Base64 to Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Base64 to Binary": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF Text": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Resume Text": {
+      "main": [
+        [
+          {
+            "node": "Generate Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Results": {
+      "main": [
+        [
+          {
+            "node": "Return Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simulated AI Match": {
+      "main": [
+        [
+          {
+            "node": "Collect Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Set Resume Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Jobs": {
+      "main": [
+        [
+          {
+            "node": "Simulated AI Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "7591c6e7-bee0-46db-8594-2f29240d83cf",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3c46a80ef81d4cfa76af2b5d8d2cf9e54d8b9434c836bfa77c4b1e10114a97bc"
+  },
+  "id": "npppCQUHD8pTa0Qt1lOIn",
+  "tags": []
+}
