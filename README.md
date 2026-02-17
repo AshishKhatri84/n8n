@@ -33,17 +33,17 @@ It:
 ### ⚙️ Flow Architecture
 
 Form Submission\
-⬇\
+       ⬇\
 Append / Update Google Sheet\
-⬇\
+       ⬇\
 Date Filter\
-⬇\
+       ⬇\
 Switch (Batch 2020 / 2021 / 2022)\
-⬇\
+       ⬇\
 Send Gmail Invitation\
-⬇\
+       ⬇\
 Merge\
-⬇\
+       ⬇\
 Final Confirmation Email
 
 
