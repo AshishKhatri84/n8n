@@ -12,6 +12,7 @@ These workflows demonstrate:
 -   🔗 Webhook-based automation APIs
 -   📊 Google Sheets integration
 -   🤖 OpenAI + AI Agent workflows
+------------------------------------------------------------------------
 
 # 📌 Workflows Included
 
@@ -29,8 +30,6 @@ It:
 -   Sends batch-specific invitation emails
 -   Sends final confirmation email
 
-------------------------------------------------------------------------
-
 ### ⚙️ Flow Architecture
 
 Form Submission\
@@ -47,7 +46,6 @@ Merge\
 ⬇\
 Final Confirmation Email
 
-------------------------------------------------------------------------
 
 ### 🧩 Features
 
@@ -58,7 +56,6 @@ Final Confirmation Email
 -   📧 Batch-specific Gmail notifications
 -   📬 Final confirmation email
 
-------------------------------------------------------------------------
 
 ### 🎯 Use Case
 
@@ -88,7 +85,7 @@ Then:
 -   Summarizes last 24 hours
 -   Sends daily email at 7 AM
 
-------------------------------------------------------------------------
+
 
 ### ⚙️ Flow Architecture
 
@@ -104,7 +101,7 @@ Set Output\
 ⬇\
 Send Gmail Summary
 
-------------------------------------------------------------------------
+
 
 ### 🧠 AI Configuration
 
@@ -120,7 +117,6 @@ Prompt Logic:
     -   "Tech News:"
 -   No extra commentary
 
-------------------------------------------------------------------------
 
 ### 🎯 Use Case
 
@@ -143,30 +139,29 @@ This is a webhook-based AI simulation system that:
 -   Calculates skill match percentage
 -   Returns top 4 matches
 
-------------------------------------------------------------------------
 
 ### ⚙️ Flow Architecture
 
-Webhook (POST /resume-upload)
-⬇
-Convert Base64 → Binary
-⬇
-If PDF → Extract PDF
-Else → Extract Text
-⬇
-Merge
-⬇
-Set Resume Text
-⬇
-Generate 20 Job Profiles
-⬇
-Simulated AI Match
-⬇
-Collect Top 4
-⬇
+Webhook (POST /resume-upload)\
+⬇\
+Convert Base64 → Binary\
+⬇\
+If PDF → Extract PDF\
+Else → Extract Text\
+⬇\
+Merge\
+⬇\
+Set Resume Text\
+⬇\
+Generate 20 Job Profiles\
+⬇\
+Simulated AI Match\
+⬇\
+Collect Top 4\
+⬇\
 Return JSON Response
 
-------------------------------------------------------------------------
+
 
 ### 📊 Output Example
 
@@ -185,7 +180,6 @@ Return JSON Response
 }
 ```
 
-------------------------------------------------------------------------
 
 ### 🧠 Matching Logic
 
@@ -200,7 +194,6 @@ Generate assessment:
 -   50-74% → Potential Fit
 -   \< 50% → Skill Improvement Recommended
 
-------------------------------------------------------------------------
 
 ### 🎯 Use Case
 
