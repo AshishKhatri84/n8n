@@ -10,13 +10,13 @@
           "allowedOrigins": "*"
         }
       },
-      "id": "49acc270-3ed9-4914-b98d-e72fe205f6b3",
+      "id": "560af7be-18d1-4180-9d2f-5a889f977214",
       "name": "Resume Upload Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        -560,
-        0
+        -784,
+        144
       ],
       "webhookId": "d93ef523-0a95-4e78-88f5-484198ae2143"
     },
@@ -24,13 +24,13 @@
       "parameters": {
         "jsCode": "const base64 = $json.body.fileBase64;\nconst fileName = $json.body.fileName || \"resume.pdf\";\n\nif (!base64) {\n  throw new Error(\"fileBase64 is missing\");\n}\n\nconst buffer = Buffer.from(base64, \"base64\");\n\n// Detect file type\nlet mimeType = \"application/pdf\";\n\nif (fileName.toLowerCase().endsWith(\".txt\")) {\n  mimeType = \"text/plain\";\n}\n\nreturn [{\n  binary: {\n    data: {\n      data: buffer,\n      mimeType: mimeType,\n      fileName: fileName\n    }\n  }\n}];"
       },
-      "id": "b3924bfd-20a8-4e5f-8e90-f98a020ef9c6",
+      "id": "3260bca0-7a04-4c75-be4c-84047220e798",
       "name": "Convert Base64 to Binary",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -384,
-        0
+        -608,
+        144
       ]
     },
     {
@@ -38,13 +38,13 @@
         "operation": "pdf",
         "options": {}
       },
-      "id": "f09beef1-16f2-4cc0-a704-53bbbd2ce3a5",
+      "id": "84da14e7-2ab9-4145-9d74-574fbe4a4469",
       "name": "Extract PDF Text",
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
       "position": [
-        32,
-        -96
+        -192,
+        48
       ]
     },
     {
@@ -59,41 +59,41 @@
         },
         "options": {}
       },
-      "id": "d1fe7294-a320-488f-869e-a95e554351b4",
+      "id": "df91c231-1523-4586-b6af-dc1f9150b43c",
       "name": "Set Resume Text",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3,
       "position": [
-        416,
-        0
+        192,
+        144
       ]
     },
     {
       "parameters": {
         "jsCode": "const allResults = $input.all().map(item => item.json);\n\n// sort highest match first\nallResults.sort((a, b) => b.match_percentage - a.match_percentage);\n\n// take top 4\nconst top4 = allResults.slice(0, 4);\n\nreturn [{\n  json: {\n    total_jobs_analyzed: allResults.length,\n    top_matches: top4\n  }\n}];"
       },
-      "id": "142a5c0f-c766-43a3-a6e1-bb5746e1acc9",
+      "id": "ec3eebed-be0e-4a7b-a82b-8181fd221dc9",
       "name": "Collect Results",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        992,
-        0
+        768,
+        144
       ]
     },
     {
       "parameters": {
-        "respondWith": "text",
-        "responseBody": "=={{ JSON.stringify($json) }}",
+        "respondWith": "json",
+        "responseBody": "={{$json}}",
         "options": {}
       },
-      "id": "4fb520e0-04c8-45b7-8483-73e0a8fa5ce5",
+      "id": "c636dde4-0d15-4462-afce-ecac7dbd97d8",
       "name": "Return Results",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
-        1168,
-        0
+        944,
+        144
       ]
     },
     {
@@ -104,10 +104,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        800,
-        0
+        576,
+        144
       ],
-      "id": "d4d7cf0b-134a-41ce-a066-21ed93b06749",
+      "id": "9a90f39d-d58b-414e-8600-0adbe0b909e8",
       "name": "Simulated AI Match"
     },
     {
@@ -138,10 +138,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -192,
-        0
+        -416,
+        144
       ],
-      "id": "c833f4ae-cbad-4db7-8a5f-712757d330f4",
+      "id": "3ad3c9d8-054d-4471-8f3a-f635da8c33f1",
       "name": "If"
     },
     {
@@ -152,10 +152,10 @@
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1.1,
       "position": [
-        32,
-        96
+        -192,
+        240
       ],
-      "id": "c732e57d-3ed3-45af-bf00-e446f47b8768",
+      "id": "339cd9a4-0262-4ef0-b6d0-7aaa257f2ca2",
       "name": "Extract from File"
     },
     {
@@ -163,10 +163,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        240,
-        0
+        16,
+        144
       ],
-      "id": "82cc58cd-fa06-4a5c-a5be-4393189ac441",
+      "id": "6b097c4b-6fe2-4066-9492-fda08f1d5271",
       "name": "Merge"
     },
     {
@@ -176,10 +176,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        608,
-        0
+        384,
+        144
       ],
-      "id": "b5f4f995-4e3c-4007-8a52-5f425bbdea88",
+      "id": "6a4a73b5-cd62-4afb-91ce-4687d40ffbac",
       "name": "Generate Jobs"
     }
   ],
@@ -307,15 +307,12 @@
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
-    "availableInMCP": false,
-    "timeSavedMode": "fixed",
-    "callerPolicy": "workflowsFromSameOwner"
+    "availableInMCP": false
   },
-  "versionId": "7591c6e7-bee0-46db-8594-2f29240d83cf",
+  "versionId": "2f13dffb-eebc-4082-8b89-97130930a4aa",
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "3c46a80ef81d4cfa76af2b5d8d2cf9e54d8b9434c836bfa77c4b1e10114a97bc"
+    "instanceId": "bce6dfbd96a33f5f1a33621c977fde1d1ac7052a5228e08909efa7f00410b887"
   },
-  "id": "npppCQUHD8pTa0Qt1lOIn",
+  "id": "VBCoTs49BK2rrSwy",
   "tags": []
 }
